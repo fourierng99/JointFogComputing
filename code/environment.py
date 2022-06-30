@@ -142,9 +142,12 @@ class VehicleEnv(gym.Env):
             Rate_trans_req_data = (10*np.log2(1+46/(np.power(self.observation[(action-1)*3],4)*100))) / 8
             #print(Rate_trans_req_data)
             self.observation[1+(action-1)*3] =  self.observation[11]/(self.observation[2+(action-1)*3]) + max(self.observation[12]/(Rate_trans_req_data),self.observation[1+(action-1)*3])
+            
             #print(self.observation[1+(action-1)*3])
 
-            distance_response = self.readexcel(900+action-1,self.observation[1+(action-1)*3]+self.time)
+            #distance_response = self.readexcel(900+action-1,self.observation[1+(action-1)*3]+self.time)
+            distance_response = self.server_pool["bus"][action -1].get_vehicle_location(self.observation[1+(action-1)*3]+self.time)
+
             Rate_trans_res_data = (10*np.log2(1+46/(np.power(distance_response,4)*100)))/8
             time_delay = self.observation[1+(action-1)*3]+self.queue[0][3]/(Rate_trans_res_data*1000)
             self.node_computing.write("{},{},{},{},{},{}".format(action,self.observation[(action-1)*3],self.observation[9],self.observation[1],self.observation[4],self.observation[7]))
