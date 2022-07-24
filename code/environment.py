@@ -17,6 +17,7 @@ class VehicleEnv(gym.Env):
 
         self.number_server = number_server
         self.env = env
+        self.guess_count = 0
         self.number = 1
 
         self.tasks_in_node = MAX_SERVER*[0]
@@ -160,7 +161,7 @@ class VehicleEnv(gym.Env):
             time_delay = self.observation[9]
             self.node_computing.write("{},{},{},{},{},{}".format(action,0,self.observation[9],self.observation[1],self.observation[4],self.observation[7]))
         
-        self.n_tasks_in_node[action] = self.n_tasks_in_node[action]+1
+        self.tasks_in_node[action] = self.tasks_in_node[action]+1
         reward = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1))
         self.node_computing.write(",{}\n".format(reward))
         
@@ -179,7 +180,8 @@ class VehicleEnv(gym.Env):
             self.queue = copy.deepcopy(self.data[self.data[:,0]==self.data[0][0]])
             
             for a in range(3):
-                self.observation[0+a*3] = self.readexcel(900+a,self.data[0][0])
+                #self.observation[0+a*3] = self.readexcel(900+a,self.data[0][0])
+                self.observation[0+a*3] = self.server_pool["bus"][action -1].get_vehicle_location(self.data[0][0])
             time = self.data[0][0] - self.time
             self.observation[1] = max(0,self.observation[1]-time)
             self.observation[4] = max(0,self.observation[4]-time)
@@ -196,8 +198,8 @@ class VehicleEnv(gym.Env):
         #check end of episode?
         done = len(self.queue) == 0 and len(self.data) == 0
         if done:
-            print(self.n_tasks_in_node)
-            self.configuration_result_file.write(str(self.n_tasks_in_node[0])+","+str(self.n_tasks_in_node[1])+","+str(self.n_tasks_in_node[2])+","+str(self.n_tasks_in_node[3])+","+"\n")
+            print(self.tasks_in_node)
+            self.configuration_result_file.write(str(self.tasks_in_node[0])+","+str(self.tasks_in_node[1])+","+str(self.tasks_in_node[2])+","+str(self.tasks_in_node[3])+","+"\n")
             self.quality_result_file.write("{},{},{}\n".format(self.n_quality_tasks[0],self.n_quality_tasks[1],self.n_quality_tasks[2]))
             
             #check end of program? to close files 
@@ -216,5 +218,82 @@ class VehicleEnv(gym.Env):
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
-x = VehicleEnv("MAB",0, 1,5)
-print(x.observation)
+
+    def reset(self):
+        if self.index_of_episode == -1: 
+            self.index_of_episode = 0
+            if self.train ==0:
+                self.data = pd.read_csv(os.path.join(DATA_TASK,"data_{}_test/datatask{}.csv".format(self.tdata,self.index_of_episode)),header=None).to_numpy()
+            else:
+                self.data = pd.read_csv(os.path.join(DATA_TASK,"data_{}_train/datatask{}.csv".format(self.tdata,self.index_of_episode)),header=None).to_numpy()        
+            self.data = np.sort(self.data, axis=0)
+            #self.data[:,2] = self.data[:,2] / 1000.0
+            #self.data[:,1] = self.data[:,1] / 1024.0
+            
+            self.n_quality_tasks = [0,0,0]
+            self.queue = copy.deepcopy(self.data[self.data[:,0]==self.data[0][0]])
+            self.data = self.data[self.data[:,0]!=self.data[0][0]]
+            self.result = []
+            self.time_last = self.data[-1][0]
+            self.time = self.queue[0][0]
+
+            #first observation of agent about eviroment
+            self.observation = np.array([self.server_pool["bus"][0].get_vehicle_location(self.queue[0][0]),self.server_pool["bus"][0].qtime,self.server_pool["bus"][0].rsc\
+                ,self.server_pool["bus"][1].get_vehicle_location(self.queue[0][0]),self.server_pool["bus"][1].qtime,self.server_pool["bus"][1].rsc\
+                ,self.server_pool["bus"][2].get_vehicle_location(self.queue[0][0]),self.server_pool["bus"][2].qtime,self.server_pool["bus"][2].rsc\
+                ,self.server_pool["local"].qtime,self.server_pool["local"].rsc,\
+                self.queue[0][1],self.queue[0][2],self.queue[0][4]])
+
+            # self.observation = np.array([self.readexcel(900,self.queue[0][0]),0.0,1\
+            #     ,self.readexcel(901,self.queue[0][0]),0,1.2\
+            #     ,self.readexcel(902,self.queue[0][0]),0,1,\
+            #     0,3,\
+            #     self.queue[0][1],self.queue[0][2],self.queue[0][4]])
+            self.observation[-2] = self.observation[-2]/1000
+            self.observation[-3] = self.observation[-3]/1000
+            return self.observation
+
+        self.result = []
+        self.number = 0
+        self.guess_count = 0
+
+        self.n_quality_tasks = [0, 0, 0]
+        self.tasks_in_node=[0, 0, 0, 0]
+        self.index_of_episode = self.index_of_episode + 1
+
+        self.change_resource_local(np.random.randint(1,5))
+
+        if self.index_of_episode>=100:
+            self.index_of_episode = 0
+        if self.train ==0:
+            self.data = pd.read_csv(os.path.join(DATA_TASK,"data_{}_test/datatask{}.csv".format(self.tdata,self.index_of_episode)),header=None).to_numpy()
+        else:
+            self.data = pd.read_csv(os.path.join(DATA_TASK,"data_{}_train/datatask{}.csv".format(self.tdata,self.index_of_episode)),header=None).to_numpy()
+        self.data = np.sort(self.data, axis=0)
+        #self.data[:,2] = self.data[:,2] / 1000.0
+        #self.data[:,1] = self.data[:,1] / 1024.0
+        self.queue = copy.deepcopy(self.data[self.data[:,0]==self.data[0][0]])
+        self.data = self.data[self.data[:,0]!=self.data[0][0]]
+        self.time = self.queue[0][0]
+
+        self.observation = np.array([self.server_pool["bus"][0].get_vehicle_location(self.queue[0][0]),\
+            max(0,self.observation[1]-(self.time-self.time_last)),
+            self.server_pool["bus"][0].rsc,\
+            self.server_pool["bus"][1].get_vehicle_location(self.queue[0][0]), 
+            max(0,self.observation[4]-(self.time-self.time_last)), 
+            self.server_pool["bus"][1].rsc,\
+            self.server_pool["bus"][2].get_vehicle_location(self.queue[0][0]), 
+            max(0,self.observation[7]-(self.time-self.time_last)), 
+            self.server_pool["bus"][2].rsc,\
+            max(0,self.observation[9]-(self.time-self.time_last)), 
+            self.server_pool["local"].rsc,\
+            self.queue[0][1],self.queue[0][2], 
+            self.queue[0][4]])
+        
+        self.time_last = self.data[-1][0]
+        self.observation[-2] = self.observation[-2]/1000
+        self.observation[-3] = self.observation[-3]/1000
+        return self.observation
+    
+    def change_resource_local(self, val):
+        self.server_pool["local"].change_resource(val)         

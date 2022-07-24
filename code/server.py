@@ -28,6 +28,8 @@ class LocalServer(Server):
     def get_observation(self, time):
         return np.array(self.qtime, self.rsc)
 
+    def change_resource(self, val):
+        self.rsc = val
 class VehicleServer(Server):
     def __init__(self,rsc =1, path = ""):
         super().__init__("bus", rsc)
