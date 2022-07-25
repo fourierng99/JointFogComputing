@@ -9,7 +9,7 @@ import os
 from  config import *
 from server import *
 class VehicleEnv(gym.Env):
-    def __init__(self,env,train,data,number_server) :
+    def __init__(self,env,train,data,number_server,is_autoscale = 0, ls_rsc = 3) :
 
         #Type of data : type 1 or 2
         self.tdata = data
@@ -23,7 +23,11 @@ class VehicleEnv(gym.Env):
         self.tasks_in_node = MAX_SERVER*[0]
         self.action_space = spaces.Discrete(MAX_SERVER)
         self.observation_space = spaces.Box(LOWER_OBSERVATON, HIGHER_OBSERVATION, [16])
+        self.is_autoscale = is_autoscale
 
+        self.ls_rsc = ls_rsc
+        # if(is_autoscale == 1):
+        #     self.resource_autoscaler = ResourceManager(self, 3,'Prophert' ,self.tdata)
         # iniy list of avaiable server in env
         
         lst_server = []
@@ -56,13 +60,6 @@ class VehicleEnv(gym.Env):
             self.time_last = self.data[-1][0]
             self.time = self.queue[0][0]
 
-            #first observation of agent about eviroment
-            # self.observation = np.array([self.get_vehicle_location(900,self.queue[0][0]),0.0,1\
-            #     ,self.get_vehicle_location(901,self.queue[0][0]),0,1.2\
-            #     ,self.get_vehicle_location(902,self.queue[0][0]),0,1,\
-            #     0,3,\
-            #     self.queue[0][1],self.queue[0][2],self.queue[0][4]])
-
             self.observation = np.array([self.server_pool["bus"][0].get_vehicle_location(self.queue[0][0]),self.server_pool["bus"][0].qtime,self.server_pool["bus"][0].rsc\
                 ,self.server_pool["bus"][1].get_vehicle_location(self.queue[0][0]),self.server_pool["bus"][1].qtime,self.server_pool["bus"][1].rsc\
                 ,self.server_pool["bus"][2].get_vehicle_location(self.queue[0][0]),self.server_pool["bus"][2].qtime,self.server_pool["bus"][2].rsc\
@@ -82,24 +79,7 @@ class VehicleEnv(gym.Env):
         self.Pr2 = Config.Pr2
         self.Wm = Config.Wm
         self.o2 = 100
-        # if env == "MAB":
-        #     self.rewardfiles = open("result/MAB{}/MAB_5phut_env_s{}.csv".format(self.tdata,self.number_server),"w")
-        #     self.quality_result_file = open("result/MAB{}/n_quality_tasks_mab_s{}.csv".format(self.tdata,self.number_server),"w")
-        #     self.configuration_result_file = open("result/MAB{}/thongso_mab_s{}.csv".format(self.tdata,self.number_server),"w")
-        #     self.node_computing = open("result/MAB{}/chiatask_mab_s{}.csv".format(self.tdata,self.number_server),"w")
-        #     self.node_computing.write("somay,distance,may0,may1,may2,may3,reward\n")
-        # elif env == "UCB": 
-        #     self.rewardfiles = open("UCB_5phut_env.csv","w")
-        #     self.quality_result_file = open("n_quality_tasks_ucb.csv","w")
-        #     self.configuration_result_file = open(os.path.join(RESULT_DIR, "thongso_ucb.csv"),"w")
-        #     self.node_computing = open("chiatask_ucb.csv","w")
-        #     self.node_computing.write("somay,distance,may0,may1,may2,may3,reward\n")
-        # elif env == "DQN":
-        #     self.rewardfiles = open("result/DQN{}/DQN_5phut_env_s{}.csv".format(self.tdata,self.number_server),"w")
-        #     self.quality_result_file = open("result/DQN{}/n_quality_tasks_DQN_s{}.csv".format(self.tdata,self.number_server),"w")
-        #     self.configuration_result_file = open("result/DQN{}/thongso_DQN_s{}.csv".format(self.tdata,self.number_server),"w")
-        #     self.node_computing = open("result/DQN{}/chiatask_DQN_s{}.csv".format(self.tdata,self.number_server),"w")
-        #     self.node_computing.write("somay,distance,may0,may1,may2,may3,reward\n")
+
         self.set_result_file()
         self.sumreward = 0
         self.nreward = 0
@@ -119,21 +99,7 @@ class VehicleEnv(gym.Env):
         self.node_computing = open("result/{0}_{1}/{0}_task_offloading_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
         self.node_computing.write("number_of_server,distance,server_0,server_1,server_2,server_3,reward\n")
 
-    
-    # def get_vehicle_location(self, number_bus, time):
-    #     data = self.data_bus[str(number_bus)]
-
-    #     after_time = data[data[:,1] >= time]
-    #     pre_time = data[data[:,1]<=time]
-    #     if len(after_time) == 0:
-    #         return 1.8
-    #     las = after_time[0]
-    #     first = pre_time[-1]
-    #     if las[1] != first[1]:
-    #         distance = (las[0] * (las[1]-time) + first[0] * (-first[1]+time)) / (las[1]-first[1])
-    #     else:
-    #         distance = las[0] 
-    #     return distance
+        self.autoscale_qoe_file = open("result/{0}_{1}/{0}_reward_s{2}_ls{3}.csv".format(self.env,self.tdata,self.number_server,self.ls_rsc),"w")
 
     def step(self, action):
         time_delay = 0
@@ -220,6 +186,11 @@ class VehicleEnv(gym.Env):
         return [seed]
 
     def reset(self):
+
+        #autoscaling the resources
+        # if(self.is_autoscale == 1):
+        #     self.change_resource_local(self.resource_autoscaler.auto_scale(self.index_of_episode +1))
+
         if self.index_of_episode == -1: 
             self.index_of_episode = 0
             if self.train ==0:
@@ -244,15 +215,9 @@ class VehicleEnv(gym.Env):
                 ,self.server_pool["local"].qtime,self.server_pool["local"].rsc,\
                 self.queue[0][1],self.queue[0][2],self.queue[0][4]])
 
-            # self.observation = np.array([self.readexcel(900,self.queue[0][0]),0.0,1\
-            #     ,self.readexcel(901,self.queue[0][0]),0,1.2\
-            #     ,self.readexcel(902,self.queue[0][0]),0,1,\
-            #     0,3,\
-            #     self.queue[0][1],self.queue[0][2],self.queue[0][4]])
             self.observation[-2] = self.observation[-2]/1000
             self.observation[-3] = self.observation[-3]/1000
             return self.observation
-
         self.result = []
         self.number = 0
         self.guess_count = 0
@@ -260,8 +225,6 @@ class VehicleEnv(gym.Env):
         self.n_quality_tasks = [0, 0, 0]
         self.tasks_in_node=[0, 0, 0, 0]
         self.index_of_episode = self.index_of_episode + 1
-
-        self.change_resource_local(np.random.randint(1,5))
 
         if self.index_of_episode>=100:
             self.index_of_episode = 0
