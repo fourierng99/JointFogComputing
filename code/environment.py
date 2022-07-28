@@ -8,42 +8,37 @@ import os
 
 from  config import *
 from server import *
+from auto_scaler import *
 class VehicleEnv(gym.Env):
-    def __init__(self,env,train,data,number_server,is_autoscale = 0, ls_rsc = 3) :
+    def __init__(self,env,train,data,number_server,is_autoscale = 0, ls_rsc = 3.0, tmodel = 'prophet') :
 
         #Type of data : type 1 or 2
         self.tdata = data
         self.train = train
 
+        self.vm_rsc = 1.5
+
         self.number_server = number_server
         self.env = env
         self.guess_count = 0
         self.number = 1
-
+        self.ts_model = tmodel
         self.tasks_in_node = MAX_SERVER*[0]
         self.action_space = spaces.Discrete(MAX_SERVER)
         self.observation_space = spaces.Box(LOWER_OBSERVATON, HIGHER_OBSERVATION, [16])
         self.is_autoscale = is_autoscale
-
-        self.ls_rsc = ls_rsc
+        self.auto_scaler = ResourceAutoScaler(self.ts_model,self.tdata, self.number_server)
+        self.ls_rsc = ls_rsc*self.vm_rsc
         # if(is_autoscale == 1):
         #     self.resource_autoscaler = ResourceManager(self, 3,'Prophert' ,self.tdata)
         # iniy list of avaiable server in env
-        
+        #1,1.2,1
         lst_server = []
         lst_server.append(VehicleServer(1, os.path.join(DATA_DIR, "data9000.xlsx")))
         lst_server.append(VehicleServer(1.2, os.path.join(DATA_DIR, "data9001.xlsx")))
         lst_server.append(VehicleServer(1, os.path.join(DATA_DIR , "data9002.xlsx")))
 
-        self.server_pool = {"local": LocalServer(3), "bus":lst_server}
-        #streaming data of localtion of three bus with(900, 901, 902)
-        # data900 = pd.read_excel(os.path.join(DATA_DIR, "data9000.xlsx"), index_col=0).to_numpy()
-        # data900 = data900[:, 13:15]
-        # data901 = pd.read_excel(os.path.join(DATA_DIR, "data9001.xlsx"), index_col=0).to_numpy()
-        # data901 = data901[:, 13:15]
-        # data902 = pd.read_excel(os.path.join(DATA_DIR , "data9002.xlsx"), index_col=0).to_numpy()
-        # data902 = data902[:, 13:15]
-        # self.data_bus = {"900":data900, "901":data901, "902":data902}
+        self.server_pool = {"local": LocalServer(self.ls_rsc), "bus":lst_server}
 
         #streaming data of task
         if env != "DQN": 
@@ -69,6 +64,14 @@ class VehicleEnv(gym.Env):
         else:
             self.index_of_episode = -1
             self.observation = np.array([-1])
+            
+            if(self.is_autoscale == 1):
+                if(self.train == 0):
+                    self.change_resource_local(self.auto_scaler.get_test_eps_data(0)*self.vm_rsc)
+                else:
+                    self.change_resource_local(self.auto_scaler.get_train_eps_data(0)*self.vm_rsc)
+                #print(self.server_pool["local"].rsc, self.index_of_episode)
+
         #save result into file cs
                 #configuration for connection radio between bus and 
         if (len(self.observation)>3):
@@ -92,14 +95,24 @@ class VehicleEnv(gym.Env):
         dir = os.path.join(RESULT_DIR,"{0}_{1}".format(self.env, self.tdata))
         if not os.path.exists(dir):
             os.makedirs(dir)
-    
-        self.rewardfiles = open("result/{0}_{1}/{0}_reward_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
-        self.quality_result_file = open("result/{0}_{1}/{0}_n_quality_tasks_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
-        self.configuration_result_file = open("result/{0}_{1}/{0}_config_parameter_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
-        self.node_computing = open("result/{0}_{1}/{0}_task_offloading_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
-        self.node_computing.write("number_of_server,distance,server_0,server_1,server_2,server_3,reward\n")
+        if self.is_autoscale ==1 or self.env == 'MAB':
+            self.rewardfiles = open("result/{0}_{1}/{0}_reward_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
+            self.quality_result_file = open("result/{0}_{1}/{0}_n_quality_tasks_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
+            self.configuration_result_file = open("result/{0}_{1}/{0}_config_parameter_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
+            self.node_computing = open("result/{0}_{1}/{0}_task_offloading_s{2}.csv".format(self.env,self.tdata,self.number_server),"w")
+            self.node_computing.write("number_of_server,distance,server_0,server_1,server_2,server_3,reward\n")
+        else:
+            reward_path = "result/{0}_{1}/ts{1}/{0}_reward_s{2}_vm{3}.csv".format(self.env,self.tdata,self.number_server, self.ls_rsc)
+            quality_path ="result/{0}_{1}/ts{1}/{0}_n_quality_tasks_s{2}_vm{3}.csv".format(self.env,self.tdata,self.number_server, self.ls_rsc)
+            configuration_path = "result/{0}_{1}/ts{1}/{0}_config_parameter_s{2}_vm{3}.csv".format(self.env,self.tdata,self.number_server, self.ls_rsc)
+            node_computing_path = "result/{0}_{1}/ts{1}/{0}_task_offloading_s{2}_vm{3}.csv".format(self.env,self.tdata,self.number_server, self.ls_rsc)
+            print(reward_path, quality_path, configuration_path, node_computing_path)
 
-        self.autoscale_qoe_file = open("result/{0}_{1}/{0}_reward_s{2}_ls{3}.csv".format(self.env,self.tdata,self.number_server,self.ls_rsc),"w")
+            self.rewardfiles = open(reward_path,"w")
+            self.quality_result_file = open(quality_path,"w")
+            self.configuration_result_file = open(configuration_path,"w")
+            self.node_computing = open(node_computing_path,"w")
+            self.node_computing.write("number_of_server,distance,server_0,server_1,server_2,server_3,reward\n")
 
     def step(self, action):
         time_delay = 0
@@ -118,7 +131,6 @@ class VehicleEnv(gym.Env):
             Rate_trans_res_data = (10*np.log2(1+46/(np.power(distance_response,4)*100)))/8
             time_delay = self.observation[1+(action-1)*3]+self.queue[0][3]/(Rate_trans_res_data*1000)
             self.node_computing.write("{},{},{},{},{},{}".format(action,self.observation[(action-1)*3],self.observation[9],self.observation[1],self.observation[4],self.observation[7]))
-        
         #logic block when computing node is server
         if action == 0:
             self.observation[9] += self.observation[11]/(self.observation[10])
@@ -165,6 +177,7 @@ class VehicleEnv(gym.Env):
         done = len(self.queue) == 0 and len(self.data) == 0
         if done:
             print(self.tasks_in_node)
+            print(self.server_pool["local"].rsc, self.server_pool["bus"][0].rsc,self.server_pool["bus"][1].rsc,self.server_pool["bus"][2].rsc )
             self.configuration_result_file.write(str(self.tasks_in_node[0])+","+str(self.tasks_in_node[1])+","+str(self.tasks_in_node[2])+","+str(self.tasks_in_node[3])+","+"\n")
             self.quality_result_file.write("{},{},{}\n".format(self.n_quality_tasks[0],self.n_quality_tasks[1],self.n_quality_tasks[2]))
             
@@ -186,10 +199,13 @@ class VehicleEnv(gym.Env):
         return [seed]
 
     def reset(self):
-
         #autoscaling the resources
-        # if(self.is_autoscale == 1):
-        #     self.change_resource_local(self.resource_autoscaler.auto_scale(self.index_of_episode +1))
+        if(self.is_autoscale == 1):
+            if(self.train == 1):
+                self.change_resource_local(self.auto_scaler.get_train_eps_data((self.index_of_episode +1))*self.vm_rsc)
+            else:
+                self.change_resource_local(self.auto_scaler.get_test_eps_data((self.index_of_episode +1))*self.vm_rsc)
+            #print(self.server_pool["local"].rsc, self.index_of_episode)
 
         if self.index_of_episode == -1: 
             self.index_of_episode = 0
@@ -201,6 +217,7 @@ class VehicleEnv(gym.Env):
             #self.data[:,2] = self.data[:,2] / 1000.0
             #self.data[:,1] = self.data[:,1] / 1024.0
             
+
             self.n_quality_tasks = [0,0,0]
             self.queue = copy.deepcopy(self.data[self.data[:,0]==self.data[0][0]])
             self.data = self.data[self.data[:,0]!=self.data[0][0]]
@@ -252,11 +269,16 @@ class VehicleEnv(gym.Env):
             self.server_pool["local"].rsc,\
             self.queue[0][1],self.queue[0][2], 
             self.queue[0][4]])
-        
-        self.time_last = self.data[-1][0]
+        try:
+            self.time_last = self.data[-1][0]
+        except:
+            print("no self.timelast in esp{}".format(self.index_of_episode))
         self.observation[-2] = self.observation[-2]/1000
         self.observation[-3] = self.observation[-3]/1000
         return self.observation
     
     def change_resource_local(self, val):
-        self.server_pool["local"].change_resource(val)         
+        self.server_pool["local"].change_resource(val)
+    
+    def render(self,mode='human'):
+        pass        
