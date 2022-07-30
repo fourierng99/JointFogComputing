@@ -15,9 +15,8 @@ class VehicleEnv(gym.Env):
         #Type of data : type 1 or 2
         self.tdata = data
         self.train = train
-
         self.vm_rsc = 1.5
-
+        self.delta_vm = 100
         self.number_server = number_server
         self.env = env
         self.guess_count = 0
@@ -29,6 +28,9 @@ class VehicleEnv(gym.Env):
         self.is_autoscale = is_autoscale
         self.auto_scaler = ResourceAutoScaler(self.ts_model,self.tdata, self.number_server)
         self.ls_rsc = ls_rsc*self.vm_rsc
+
+        self.normalize = 0.01
+        self.coeff = 0.7
         # if(is_autoscale == 1):
         #     self.resource_autoscaler = ResourceManager(self, 3,'Prophert' ,self.tdata)
         # iniy list of avaiable server in env
@@ -43,7 +45,7 @@ class VehicleEnv(gym.Env):
         #streaming data of task
         if env != "DQN": 
             self.index_of_episode = 0
-            if self.train ==0:
+            if self.train == 0:
                 self.data = pd.read_csv(os.path.join(DATA_TASK,"data_{}_test/datatask{}.csv".format(self.tdata,self.index_of_episode)),header=None).to_numpy()
             else:
                 self.data = pd.read_csv(os.path.join(DATA_TASK,"data_{}_train/datatask{}.csv".format(self.tdata,self.index_of_episode)),header=None).to_numpy()       
@@ -90,6 +92,9 @@ class VehicleEnv(gym.Env):
         self.quality_result_file.write("good,medium,bad\n")
 
         self.seed()
+
+        self.num_request_path = 'data/resource_manager_data/ts1_test_arima.csv'
+        self.request_data  = pd.read_csv(self.num_request_path)
     
     def set_result_file(self):
         dir = os.path.join(RESULT_DIR,"{0}_{1}".format(self.env, self.tdata))
@@ -140,10 +145,15 @@ class VehicleEnv(gym.Env):
             self.node_computing.write("{},{},{},{},{},{}".format(action,0,self.observation[9],self.observation[1],self.observation[4],self.observation[7]))
         
         self.tasks_in_node[action] = self.tasks_in_node[action]+1
-        reward = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1))
+        #reward = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1)) - self.delta_vm*int(self.server_pool["local"].rsc/self.vm_rsc)/self.request_data.y_pred.values[self.index_of_episode]
+        time_run = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1))
+        energy = ((3-self.server_pool["local"].rsc/self.vm_rsc)+ self.normalize)/2
+        if energy >1.0:
+            energy = 1.0
+        #reward = time_run*self.coeff
+        reward = self.coeff *time_run +(1-self.coeff)*energy
         self.node_computing.write(",{}\n".format(reward))
-        
-        if reward == 1:
+        if reward == 1 or reward >= time_run*self.coeff:
             self.n_quality_tasks[0]+=1
         elif reward == 0:
             self.n_quality_tasks[2] += 1
@@ -181,12 +191,14 @@ class VehicleEnv(gym.Env):
             self.configuration_result_file.write(str(self.tasks_in_node[0])+","+str(self.tasks_in_node[1])+","+str(self.tasks_in_node[2])+","+str(self.tasks_in_node[3])+","+"\n")
             self.quality_result_file.write("{},{},{}\n".format(self.n_quality_tasks[0],self.n_quality_tasks[1],self.n_quality_tasks[2]))
             
+
+
             #check end of program? to close files 
             if self.index_of_episode == 99:
                 self.quality_result_file.close()
                 self.configuration_result_file.close()
                 self.node_computing.close()
-        self.sumreward = self.sumreward + reward
+        self.sumreward = self.sumreward + reward 
         self.nreward = self.nreward + 1
         avg_reward = self.sumreward/self.nreward
         self.rewardfiles.write(str(avg_reward)+"\n")
@@ -202,8 +214,10 @@ class VehicleEnv(gym.Env):
         #autoscaling the resources
         if(self.is_autoscale == 1):
             if(self.train == 1):
+                print("here train")
                 self.change_resource_local(self.auto_scaler.get_train_eps_data((self.index_of_episode +1))*self.vm_rsc)
             else:
+                print("here test")
                 self.change_resource_local(self.auto_scaler.get_test_eps_data((self.index_of_episode +1))*self.vm_rsc)
             #print(self.server_pool["local"].rsc, self.index_of_episode)
 

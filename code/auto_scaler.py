@@ -40,7 +40,7 @@ class ResourceAutoScaler:
     #     return vm_seq
 
 
-asl = ResourceAutoScaler('prophet',1,4)
-val = asl.train_data
+#asl = ResourceAutoScaler('prophet',1,4)
+#val = asl.train_data
 #print(asl.get_train_eps_data(0))
 #print(asl.vms)

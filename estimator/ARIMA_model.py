@@ -53,11 +53,11 @@ class WorkloadArima:
         self.test_data.to_csv(dpath,index=None)
         print(dpath)
         
-        # plt.plot(test_val)
-        # plt.plot(predictions, color='red')
-        # plt.show()        
+        plt.plot(test_val)
+        plt.plot(predictions, color='red')
+        plt.show()        
 
-x = WorkloadArima('estimator/data_est/clarknet_train_test.csv',tdata=1)
+x = WorkloadArima('estimator/data_est/nasa_train_test.csv',tdata=2)
 x.run_predict()
 
 # data = pd.read_csv('estimator\clarknet_train_test.csv')

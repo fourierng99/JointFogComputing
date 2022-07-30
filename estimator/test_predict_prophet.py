@@ -26,6 +26,9 @@ class WorkloadEstimator:
         pdata = pd.read_csv(path, index_col= None, header=0)
         self.data = pdata[:1440]
         self.data.columns = ['ds', 'y']
+        self.real_date = self.data.ds.values[-100:]
+        test = pd.date_range("1995/07/01", periods=500, freq="D").values
+        self.data['ds'] =test
     def split_train_test(self, train_rate =0.8):
         length_split = int(len(self.data)* train_rate)
         self.train_data = self.data[:length_split]
@@ -43,25 +46,26 @@ class WorkloadEstimator:
         mae = mean_absolute_error(y_true, y_pred)
         r2 = r2_score(y_true, y_pred)
         rmse = math.sqrt(mean_squared_error(y_true, y_pred))
-        #print('MAE: %.3f' % mae)
+        print('MAE: %.3f' % mae)
         #print('R2: %.3f' % r2)
-        #print('RMSE: %.3f' % rmse)
+        print('RMSE: %.3f' % rmse)
         # plot expected vs actual
         #print(y_pred)
         #print(y_true)
 
         self.test_data['y_pred'] = y_pred.values
-        print(self.test_data)
+        #print(self.test_data)
         dpath = "estimator/ts{}_test_{}.csv".format(self.tdata, self.tmodel)
+        self.test_data['ds'] = self.real_date
         self.test_data.to_csv(dpath,index=None)
-        print(dpath)
+        #print(dpath)
 
-        #self.model.plot(forecast)
-        # pyplot.figure(figsize=(24, 6))
-        # pyplot.plot(x_test['ds'],y_true, label='Actual')
-        # pyplot.plot(x_test['ds'],y_pred, label='Predicted')
-        # pyplot.legend()
-        # pyplot.show()
+        self.model.plot(forecast)
+        pyplot.figure(figsize=(24, 6))
+        pyplot.plot(x_test['ds'],y_true, label='Actual')
+        pyplot.plot(x_test['ds'],y_pred, label='Predicted')
+        pyplot.legend()
+        pyplot.show()
 # x = WorkloadEstimator()
 # x.read_csv_data('estimator\data_est\clarknet_train_test.csv')
 x = WorkloadEstimator(2)

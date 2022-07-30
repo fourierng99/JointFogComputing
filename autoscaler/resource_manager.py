@@ -17,22 +17,22 @@ class ResourceManager:
         self.train_eps_data = pd.read_csv(self.train_eps_data_path)
         self.test_eps_data = pd.read_csv(self.test_eps_data_path)
         self.data = {}
-
-        for i in range(0, number_of_vm):
-            val_div = 400
-            train_path = 'autoscaler\data\DQL_5_minute_s{0}_vm{1}_ts{2}.csv'.format(self.number_of_server,i+1, self.ts_data)
-            print(train_path)
-            df = pd.read_csv(train_path)
-            for j in range(len(df)):
-                key = float(int(self.train_eps_data.loc[j].y/val_div)*val_div)
-                val =df.loc[j].total_reward
-                if( key in self.data.keys()):
-                    self.data[key][i][0] = (self.data[key][i][0] + val)/(self.data[key][i][1]+1)
-                    self.data[key][i][1] = self.data[key][i][1]+1
-                else:
-                    self.data[key] = [[0,0] for i in range(number_of_vm)]
-                    self.data[key][i][0] =self.data[key][i][0] + val
-                    self.data[key][i][1] = self.data[key][i][1]+1
+        print(self.test_eps_data)
+        # for i in range(0, number_of_vm):
+        #     val_div = 400
+        #     train_path = 'autoscaler\data\DQL_5_minute_s{0}_vm{1}_ts{2}.csv'.format(self.number_of_server,i+1, self.ts_data)
+        #     print(train_path)
+        #     df = pd.read_csv(train_path)
+        #     for j in range(len(df)):
+        #         key = float(int(self.train_eps_data.loc[j].y/val_div)*val_div)
+        #         val =df.loc[j].total_reward
+        #         if( key in self.data.keys()):
+        #             self.data[key][i][0] = (self.data[key][i][0] + val)/(self.data[key][i][1]+1)
+        #             self.data[key][i][1] = self.data[key][i][1]+1
+        #         else:
+        #             self.data[key] = [[0,0] for i in range(number_of_vm)]
+        #             self.data[key][i][0] =self.data[key][i][0] + val
+        #             self.data[key][i][1] = self.data[key][i][1]+1
        
     def update_scale_list(self, lst_num_request):
         lst_scale = []
@@ -46,6 +46,8 @@ class ResourceManager:
     
     def update_scale_list2(self, lst_num_request):
         lst_data = [0, 800, 1100]
+        if(self.ts_data ==2):
+            lst_data = [0, 600, 1100]
         lst_scale = []
         for e in lst_num_request:
             if e < lst_data[1]:
@@ -55,6 +57,8 @@ class ResourceManager:
             else:
                 lst_scale.append(3)
         return lst_scale
+
+
 
     def export_train_test_scaling(self):
         # train_scale = self.update_scale_list(self.train_eps_data.y.values)
@@ -72,12 +76,12 @@ class ResourceManager:
         test_df["scale"] = test_scale
 
         train_df.to_csv('autoscaler/scale{0}_train_s{1}.csv'.format(self.ts_data, self.number_of_server), index=False)
-        train_df.to_csv('autoscaler/scale{0}_test_s{1}_{2}.csv'.format(self.ts_data, self.number_of_server, self.ts_model),index=False)
+        test_df.to_csv('autoscaler/scale{0}_test_s{1}_{2}.csv'.format(self.ts_data, self.number_of_server, self.ts_model),index=False)
 
 
         print(train_df.scale.values)
         print(test_df.scale.values)
 
-x = ResourceManager(3,4,'arima',1)
+x = ResourceManager(3,4,'arima',2)
 #x = ResourceManager(3,4,'prophet',1)
 x.export_train_test_scaling()

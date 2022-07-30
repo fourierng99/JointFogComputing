@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import random as rd
+from time import time
 import numpy as np
 import pandas as pd
 from  numpy.random import poisson as ps
@@ -82,6 +83,63 @@ def random_task_type_nasa():
                 m4 = 1+np.random.rand()
                 output.write("{},{},{},{},{}\n".format(m,m3,m1,m2,m4))
 
+
+def random_task_type_nasa_2(times = 2):
+    df = pd.read_csv("data/nasa_dataset.csv")
+    df["datetime"] = pd.to_datetime(df["datetime"])
+    start_time_first = pd.to_datetime('1995-07-01 08:00:00')
+    end_time = start_time_first
+    for i in range(100):
+        start_time = end_time
+        end_time = start_time +timedelta(minutes=5)
+        tdf = df[(df["datetime"] >= start_time) & (df["datetime"] < end_time)].reset_index()
+        with open("{}/data_task/{}/datatask{}.csv".format(str(path),"data_2_train",i),"w") as output:
+            number_task = len(tdf)
+            if(number_task == 0):
+                for k in range(times):
+                    m = (start_time + timedelta(minutes=np.random.randint(300))-start_time_first).total_seconds()
+                    m1 = np.random.randint(1000,2000)
+                    m2 = np.random.randint(100,200)
+                    m3 = np.random.randint(500,1500)
+                    m4 = 1+np.random.rand()
+                    output.write("{},{},{},{},{}\n".format(m,m3,m1,m2,m4))  
+            for j in range(number_task):
+                task = tdf.loc[j]
+                for k in range(times):
+                    m = (task.datetime-start_time_first).total_seconds()
+                    m1 = np.random.randint(1000,2000)
+                    m2 = np.random.randint(100,200)
+                    m3 = np.random.randint(500,1500)
+                    m4 = 1+np.random.rand()
+                    output.write("{},{},{},{},{}\n".format(m,m3,m1,m2,m4))
+    
+    start_time_first = pd.to_datetime('1995-07-05 08:00:00')
+    end_time = start_time_first
+    for i in range(100):
+        start_time = end_time
+        end_time = start_time +timedelta(minutes=5)
+        tdf = df[(df["datetime"] >= start_time) & (df["datetime"] < end_time)].reset_index()
+        with open("{}/data_task/{}/datatask{}.csv".format(str(path),"data_2_test",i),"w") as output:
+            number_task = len(tdf)
+
+            if(number_task == 0):
+                for k in range(times):
+                    m = (start_time + timedelta(minutes=np.random.randint(300))-start_time_first).total_seconds()
+                    m1 = np.random.randint(1000,2000)
+                    m2 = np.random.randint(100,200)
+                    m3 = np.random.randint(500,1500)
+                    m4 = 1+np.random.rand()
+                    output.write("{},{},{},{},{}\n".format(m,m3,m1,m2,m4))  
+
+            for j in range(number_task):
+                task = tdf.loc[j]
+                for k in range(times):
+                    m = (task.datetime-start_time_first).total_seconds()
+                    m1 = np.random.randint(1000,2000)
+                    m2 = np.random.randint(100,200)
+                    m3 = np.random.randint(500,1500)
+                    m4 = 1+np.random.rand()
+                    output.write("{},{},{},{},{}\n".format(m,m3,m1,m2,m4))
 # if __name__=="__main__":
 #     types = 1
 #     if len(sys.argv) > 1:
@@ -93,4 +151,4 @@ def random_task_type_nasa():
 #     else:
 #         print("vui lòng chọn kiểu dữ liệu type 1 or 2")
 #random_task_type_clarknet()
-random_task_type_nasa()
+random_task_type_nasa_2()
