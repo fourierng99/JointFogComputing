@@ -59,7 +59,7 @@ def Run_DQN(env,number_server):
     if(env.is_autoscale == 0):
         callback_path = "DQL_5_minute_s{}_vm{}_ts{}.csv".format(env.number_server,env.ls_rsc,env.tdata)
 
-    callbacks = CustomerTrainEpisodeLogger(callback_path)
+    callbacks = CustomerTrainEpisodeLogger(env = env ,filename= callback_path)
     callback2 = ModelIntervalCheckpoint("weight_DQLs{}.h5".format(number_server),interval=50000)
     dqn.compile(Adam(lr=1e-3), metrics=['mse','mae'])
 
@@ -102,9 +102,22 @@ def Test_DQN(env,number_server):
     dqn.test(env,100,callbacks=[test_callback])
 
 def calculate_nb_step(tdata,start_date, n_episode):
-    dataset_path = "data\clarknet_dataset.csv"
+    
     if tdata==2:
-        dataset_path = "data/nasa_dataset.csv"
+        l_train = 0
+        for i in range(0,100):
+            df = pd.read_csv('data_task\data_2_train\datatask{}.csv'.format(i))
+            l_train += len(df)
+        return l_train
+    else:
+        l_train = 0
+        for i in range(0,100):
+            df = pd.read_csv('data_task\data_1_train\datatask{}.csv'.format(i))
+            l_train += len(df)
+        return l_train
+    
+    
+    dataset_path = "data\clarknet_dataset.csv"
 
     df = pd.read_csv(dataset_path)
     df["datetime"] = pd.to_datetime(df["datetime"])

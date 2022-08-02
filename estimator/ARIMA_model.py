@@ -3,13 +3,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
 from matplotlib.pylab import rcParams
+import sklearn
 rcParams['figure.figsize'] = 15, 6
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_absolute_error
 import math 
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
-
+from sklearn.metrics import mean_absolute_percentage_error
 class WorkloadArima:
     def __init__(self,path, train_rate = 0.8,tdata = 1):
         self.path = path
@@ -41,23 +42,29 @@ class WorkloadArima:
             history.append(obs)
             #print('predicted=%f, expected=%f' % (yhat, obs))
         # compare the 25% tested values with predicted values
-
-        mae = mean_absolute_error(test_val, predictions)
-        rmse = math.sqrt(mean_squared_error(test_val, predictions))
+        pr = predictions[-1]
+        predictions.append(pr)
+        mae = mean_absolute_error(test_val, predictions[1:])
+        mape = mean_absolute_percentage_error(y_true=test_val, y_pred=predictions[1:])
+        rmse = math.sqrt(mean_squared_error(test_val, predictions[1:]))
         print('MAE: %.3f' % mae)
         print('RMSE: %.3f' % rmse)
-        
+        print(mape)
         #export data
-        self.test_data['y_pred'] = predictions
+        self.test_data['y_pred'] = predictions[1:]
         dpath = "estimator/ts{}_test_{}.csv".format(self.tdata, self.tmodel)
-        self.test_data.to_csv(dpath,index=None)
+        #self.test_data.to_csv(dpath,index=None)
         print(dpath)
         
         plt.plot(test_val)
-        plt.plot(predictions, color='red')
+        #plt.plot(predictions[0:], color='red')
+        #print(predictions)
+        plt.plot(self.test_data['y_pred'].values, color='green')
+        plt.plot(xlabel = 'datetime',ylabel ='request count', label='request count')
         plt.show()        
 
 x = WorkloadArima('estimator/data_est/nasa_train_test.csv',tdata=2)
+#x = WorkloadArima('estimator/data_est/clarknet_train_test.csv',tdata=2)
 x.run_predict()
 
 # data = pd.read_csv('estimator\clarknet_train_test.csv')

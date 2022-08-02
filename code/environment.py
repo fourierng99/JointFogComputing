@@ -29,6 +29,8 @@ class VehicleEnv(gym.Env):
         self.auto_scaler = ResourceAutoScaler(self.ts_model,self.tdata, self.number_server)
         self.ls_rsc = ls_rsc*self.vm_rsc
 
+        self.num_vms = ls_rsc
+
         self.normalize = 0.01
         self.coeff = 0.7
         # if(is_autoscale == 1):
@@ -153,9 +155,9 @@ class VehicleEnv(gym.Env):
         #reward = time_run*self.coeff
         reward = self.coeff *time_run +(1-self.coeff)*energy
         self.node_computing.write(",{}\n".format(reward))
-        if reward == 1 or reward >= time_run*self.coeff:
+        if reward == 1 or time_run==1:
             self.n_quality_tasks[0]+=1
-        elif reward == 0:
+        elif reward ==0 or time_run ==0:
             self.n_quality_tasks[2] += 1
         else:
             self.n_quality_tasks[1] += 1
@@ -214,10 +216,10 @@ class VehicleEnv(gym.Env):
         #autoscaling the resources
         if(self.is_autoscale == 1):
             if(self.train == 1):
-                print("here train")
+                print("here train" + str(self.auto_scaler.get_train_eps_data((self.index_of_episode +1))*self.vm_rsc))
                 self.change_resource_local(self.auto_scaler.get_train_eps_data((self.index_of_episode +1))*self.vm_rsc)
             else:
-                print("here test")
+                print("here test" + str(self.auto_scaler.get_train_eps_data((self.index_of_episode +1))*self.vm_rsc))
                 self.change_resource_local(self.auto_scaler.get_test_eps_data((self.index_of_episode +1))*self.vm_rsc)
             #print(self.server_pool["local"].rsc, self.index_of_episode)
 

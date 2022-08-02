@@ -82,6 +82,6 @@ class ResourceManager:
         print(train_df.scale.values)
         print(test_df.scale.values)
 
-x = ResourceManager(3,4,'arima',2)
-#x = ResourceManager(3,4,'prophet',1)
+#x = ResourceManager(3,4,'arima',2)
+x = ResourceManager(3,4,'prophet',1)
 x.export_train_test_scaling()

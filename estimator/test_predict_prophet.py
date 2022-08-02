@@ -10,7 +10,7 @@ from sklearn.metrics import mean_absolute_error
 import math 
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
-
+from sklearn.metrics import mean_absolute_percentage_error
 class WorkloadEstimator:
     def __init__(self,tdata =1):
         self.tdata = tdata
@@ -44,10 +44,10 @@ class WorkloadEstimator:
         y_true = self.test_data['y']
 
         mae = mean_absolute_error(y_true, y_pred)
-        r2 = r2_score(y_true, y_pred)
+        mape = mean_absolute_percentage_error(y_true, y_pred)
         rmse = math.sqrt(mean_squared_error(y_true, y_pred))
         print('MAE: %.3f' % mae)
-        #print('R2: %.3f' % r2)
+        print('MAPE: %.3f' % mape)
         print('RMSE: %.3f' % rmse)
         # plot expected vs actual
         #print(y_pred)

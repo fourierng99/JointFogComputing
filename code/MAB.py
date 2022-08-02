@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import sys as sys
 from environment import *
 class Bandit:
-    def __init__(self, k=10, exp_rate=.3, lr=0.1, ucb=False, seed=None, c=2,train=0,dataindex=0,number_server=0, is_autoscale = 0, ls_rsc = 3, tmodel = 'arima'):
+    def __init__(self, k=10, exp_rate=.3, lr=0.1, ucb=False, seed=None, c=2,train=0,dataindex=0,number_server=4, is_autoscale = 0, ls_rsc = 3, tmodel = 'arima'):
         self.k = int(number_server)
         self.actions = range(self.k)
         self.exp_rate = exp_rate
@@ -23,12 +23,15 @@ class Bandit:
             self.enviroment = VehicleEnv("MAB",train,dataindex,number_server,is_autoscale, ls_rsc, tmodel)
             print(self.enviroment.train)
             self.mab = open("testMAB.csv","w")
-            self.his_files = open("result/MAB_1/MAB_5minute_s{}_vm{}_ts{}.csv".format(self.k, self.enviroment.ls_rsc,self.enviroment.tdata ),"w")
-            if(is_autoscale ==1):
-                self.his_files = open("result/MAB_1/MAB_5minute_s{}_ts{}_{}.csv".format(self.k,self.enviroment.tdata, tmodel),"w")       
+            path_file = "result/MAB_{2}/MAB_5minute_s{0}_vm{1}_ts{2}.csv".format(self.k, self.enviroment.ls_rsc,self.enviroment.tdata)
+            if(is_autoscale == 1):
+                path_file = "result/MAB_{1}/MAB_5minute_s{0}_ts{1}_{2}.csv".format(self.k,self.enviroment.tdata, tmodel)
+            print(path_file)
+            self.his_files = open(path_file,"w")    
         self.his_files.write("count,reward,mean_reward\n")
 
         self.TrueValue = []
+        
         np.random.seed(seed)
         #for i in range(self.k):
         #    self.TrueValue.append(np.random.randn() + 2)  # normal distribution

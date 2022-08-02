@@ -5,10 +5,14 @@ from rl.callbacks import Callback
 from tempfile import mkdtemp
 
 class CustomerTrainEpisodeLogger(Callback):
-    def __init__(self,filename):
+    def __init__(self,env,filename):
         # Some algorithms compute multiple episodes at once since they are multi-threaded.
         # We therefore use a dictionary that is indexed by the episode to separate episodes
         # from each other.
+        self.env = env
+        self.log_data = open("result/logs/{0}_{1}{2}{3}{4}{5}.csv".format(self.env.env,self.env.train,self.env.tdata,self.env.number_server,self.env.is_autoscale, self.env.num_vms),"w")
+        self.log_data.write("episode,episode_step,total_reward,mean_reward,loss,mse,mae,mean_q\n")
+
         self.episode_start = {}
         self.observations = {}
         self.rewards = {}
@@ -27,6 +31,8 @@ class CustomerTrainEpisodeLogger(Callback):
     def on_train_end(self, logs):
         """ Print training time at end of training """
         duration = timeit.default_timer() - self.train_start
+
+        self.log_data.close()
         self.files.close()
 
     def on_episode_begin(self, episode, logs):
@@ -46,6 +52,9 @@ class CustomerTrainEpisodeLogger(Callback):
         metrics = np.array(self.metrics[episode])
         metrics_template = ''
         metrics_variables = []
+
+        metrics_dict = {}
+
         with warnings.catch_warnings():
             warnings.filterwarnings('error')
             for idx, name in enumerate(self.metrics_names):
@@ -58,6 +67,9 @@ class CustomerTrainEpisodeLogger(Callback):
                     value = '--'
                     metrics_template += '{}: {}'
                 metrics_variables += [name, value]
+                
+                metrics_dict[name] = value
+
         metrics_text = metrics_template.format(*metrics_variables)
 
         nb_step_digits = str(
@@ -85,6 +97,8 @@ class CustomerTrainEpisodeLogger(Callback):
         }
 
         #print(template.format(**variables))
+        #print("{0},{1}, {2},{3}, {4},{5},{6}\n".format(variables["episode"],variables["episode_reward"],variables["reward_mean"],metrics_dict['loss'], metrics_dict['mse'],metrics_dict['mae'], metrics_dict['mean_q']))
+        self.log_data.write("{0},{1},{2},{3},{4}, {5},{6},{7}\n".format(variables["episode"],variables["episode_steps"],variables["episode_reward"],variables["reward_mean"],metrics_dict['loss'], metrics_dict['mse'],metrics_dict['mae'], metrics_dict['mean_q']))
         self.files.write(str(variables["episode_reward"])+","+str(variables["reward_mean"])+"\n")
         # Free up resources.
         del self.episode_start[episode]
