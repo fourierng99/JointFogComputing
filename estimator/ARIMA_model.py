@@ -53,7 +53,7 @@ class WorkloadArima:
         #export data
         self.test_data['y_pred'] = predictions[1:]
         dpath = "estimator/ts{}_test_{}.csv".format(self.tdata, self.tmodel)
-        #self.test_data.to_csv(dpath,index=None)
+        self.test_data.to_csv(dpath,index=None)
         print(dpath)
         
         plt.plot(test_val)
