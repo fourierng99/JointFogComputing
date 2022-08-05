@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime,timedelta
-
+from matplotlib import pyplot as plt
 from pyparsing import col
 def task_type_clarknet():
     df = pd.read_csv("estimator\clarknet_dataset.csv")
@@ -67,7 +67,11 @@ def filter_task_type_nasa2(times = 2):
     df["datetime"] = pd.to_datetime(df["datetime"])
     ex_df = df[(df["datetime"].dt.hour*60 >= 8*60) & (df["datetime"].dt.hour *60 + df["datetime"].dt.minute < 16*60+20)].reset_index()
     #ex_df = df[(df["datetime"].dt.hour >= 8) & (df["datetime"].dt.hour <= 4 & df["datetime"].dt.minute < 20)].reset_index()
-    ex_df.to_csv("estimator/data_est/nasa_data_request_count_filter.csv", index=False)
-
-task_type_nasa2()
-filter_task_type_nasa2()
+    #ex_df.plot)
+    #ex_df.to_csv("estimator/data_est/nasa_data_request_count_filter.csv", index=False)
+    print(ex_df.request_count.values[500:600])
+    print(ex_df.request_count.values[600:700])
+    plt.plot(ex_df.request_count.values[200:700])
+    plt.show()
+#task_type_nasa2()
+filter_task_type_nasa2(2)

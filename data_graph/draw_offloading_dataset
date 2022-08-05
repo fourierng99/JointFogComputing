@@ -1,0 +1,33 @@
+from cProfile import label
+from cmath import sqrt
+from datetime import datetime
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+
+ts1_train = pd.read_csv("data/resource_manager_data/ts1_train.csv", index_col= 'ds')
+ts1_test_arima = pd.read_csv('data/resource_manager_data/ts1_test_arima.csv',index_col= 'ds')
+#ts1_test_prophet = pd.read_csv('data/resource_manager_data/ts1_test_prophet.csv')
+
+ts2_train = pd.read_csv('data/resource_manager_data/ts2_train.csv',index_col= 'ds')
+ts2_test_arima = pd.read_csv('data/resource_manager_data/ts1_test_prophet.csv',index_col= 'ds')
+#ts2_test_prophet = pd.read_csv('data/resource_manager_data/ts2_test_prophet.csv')
+
+dfx = pd.read_csv('estimator\data_est/nasa_train_test.csv',index_col='datetime')
+
+# ts1_test_arima.drop('y_pred', inplace=True, axis=1)
+# train_test = ts1_train.append(ts1_test_arima, ignore_index=True)
+# train_test.rename(columns = {'y':'request_count'}, inplace = True)
+
+ts2_test_arima.drop('y_pred', inplace=True, axis=1)
+train_test = ts2_train.append(ts2_test_arima, ignore_index=True)
+train_test.rename(columns = {'y':'request_count'}, inplace = True)
+
+#df_clark = pd.read_csv('estimator\data_est/nasa_train_test.csv',index_col='datetime')
+#df_clark.plot(xlabel = 'datetime',ylabel ='request count', label='request count')
+train_test.plot(xlabel = 'datetime',ylabel ='request count', label='request count', marker ='o')
+plt.subplots_adjust(wspace=5)
+plt.axvline(x = 100, color = 'violet', label = 'train-test bound',linestyle='dotted')
+#plt.plot(['7/5/1995 8:00']*20,[200]*1*20,color="violet", linestyle='--')
+plt.legend(loc = 'best')
+plt.show()   

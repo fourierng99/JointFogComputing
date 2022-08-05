@@ -32,7 +32,7 @@ class VehicleEnv(gym.Env):
         self.num_vms = ls_rsc
 
         self.normalize = 0.01
-        self.coeff = 0.7
+        self.coeff = 0.75
         # if(is_autoscale == 1):
         #     self.resource_autoscaler = ResourceManager(self, 3,'Prophert' ,self.tdata)
         # iniy list of avaiable server in env
@@ -150,10 +150,10 @@ class VehicleEnv(gym.Env):
         #reward = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1)) - self.delta_vm*int(self.server_pool["local"].rsc/self.vm_rsc)/self.request_data.y_pred.values[self.index_of_episode]
         time_run = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1))
         energy = ((3-self.server_pool["local"].rsc/self.vm_rsc)+ self.normalize)/2
-        if energy >1.0:
-            energy = 1.0
+        # if energy >1.0:
+        #     energy = 1.0
         #reward = time_run*self.coeff
-        reward = self.coeff *time_run +(1-self.coeff)*energy
+        reward = min(1,self.coeff *time_run +(1-self.coeff)*energy)
         self.node_computing.write(",{}\n".format(reward))
         if reward == 1 or time_run==1:
             self.n_quality_tasks[0]+=1

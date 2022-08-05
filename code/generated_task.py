@@ -87,7 +87,7 @@ def random_task_type_nasa():
 def random_task_type_nasa_2(times = 2):
     df = pd.read_csv("data/nasa_dataset.csv")
     df["datetime"] = pd.to_datetime(df["datetime"])
-    start_time_first = pd.to_datetime('1995-07-01 08:00:00')
+    start_time_first = pd.to_datetime('1995-07-06 08:00:00')
     end_time = start_time_first
     for i in range(100):
         start_time = end_time
@@ -113,7 +113,7 @@ def random_task_type_nasa_2(times = 2):
                     m4 = 1+np.random.rand()
                     output.write("{},{},{},{},{}\n".format(m,m3,m1,m2,m4))
     
-    start_time_first = pd.to_datetime('1995-07-05 08:00:00')
+    start_time_first = pd.to_datetime('1995-07-07 08:00:00')
     end_time = start_time_first
     for i in range(100):
         start_time = end_time

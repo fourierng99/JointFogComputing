@@ -47,7 +47,7 @@ class ResourceManager:
     def update_scale_list2(self, lst_num_request):
         lst_data = [0, 800, 1100]
         if(self.ts_data ==2):
-            lst_data = [0, 600, 1100]
+            lst_data = [0, 800, 1100]
         lst_scale = []
         for e in lst_num_request:
             if e < lst_data[1]:
@@ -82,6 +82,6 @@ class ResourceManager:
         print(train_df.scale.values)
         print(test_df.scale.values)
 
-#x = ResourceManager(3,4,'arima',2)
-x = ResourceManager(3,4,'prophet',1)
+x = ResourceManager(3,4,'arima',2)
+#x = ResourceManager(3,4,'prophet',1)
 x.export_train_test_scaling()

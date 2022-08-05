@@ -53,7 +53,7 @@ def Run_DQN(env,number_server):
     memory = SequentialMemory(limit=5000, window_length=1)
     
     dqn = DQNAgent(model=model, nb_actions=num_actions, memory=memory, nb_steps_warmup=10,\
-              target_model_update=1e-3, policy=policy,gamma=0.7,memory_interval=1)
+              target_model_update=1e-3, policy=policy,gamma=0.9,memory_interval=1)
     
     callback_path = "DQL_5_minute_s{}_ts{}_{}.csv".format(env.number_server, env.tdata, env.ts_model)
     if(env.is_autoscale == 0):

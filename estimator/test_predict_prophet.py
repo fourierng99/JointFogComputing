@@ -20,7 +20,9 @@ class WorkloadEstimator:
             with open('serialized_model.json', 'r') as fin:
                 self.model = model_from_json(json.load(fin))
         else:
-            self.model = Prophet(changepoint_prior_scale=0.5, interval_width = 0.95).fit(self.train_data)
+            #self.model = Prophet(changepoint_prior_scale=0.1, n_changepoints=200, seasonality_mode='additive', interval_width = 0.95).fit(self.train_data)
+            self.model = Prophet(changepoint_prior_scale=0.01, n_changepoints=50, interval_width = 0.95).fit(self.train_data)
+
 
     def read_csv_data(self, path):
         pdata = pd.read_csv(path, index_col= None, header=0)
