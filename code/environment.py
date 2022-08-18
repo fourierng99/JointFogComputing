@@ -145,7 +145,16 @@ class VehicleEnv(gym.Env):
 
             time_delay = self.observation[9]
             self.node_computing.write("{},{},{},{},{},{}".format(action,0,self.observation[9],self.observation[1],self.observation[4],self.observation[7]))
-        
+        # if(self.env == 'DQN'):
+                #     self.coeff = 0.7
+                #     self.normalize = 0.01
+                #     time_run = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1))
+                #     energy = (3-self.server_pool["local"].rsc/self.vm_rsc)/2
+                #     reward = self.coeff *time_run +(1-self.coeff)*energy + self.normalize
+                #     # reward = min(1,self.coeff *time_run +(1-self.coeff)*energy + self.normalize)
+        if(self.env == 'MAB'):
+             self.coeff = 0.7
+
         self.tasks_in_node[action] = self.tasks_in_node[action]+1
         #reward = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1)) - self.delta_vm*int(self.server_pool["local"].rsc/self.vm_rsc)/self.request_data.y_pred.values[self.index_of_episode]
         time_run = max(0,min((2*self.observation[13]-time_delay)/self.observation[13],1))
@@ -154,6 +163,7 @@ class VehicleEnv(gym.Env):
         #     energy = 1.0
         #reward = time_run*self.coeff
         reward = min(1,self.coeff *time_run +(1-self.coeff)*energy)
+
         self.node_computing.write(",{}\n".format(reward))
         if reward == 1 or time_run==1:
             self.n_quality_tasks[0]+=1

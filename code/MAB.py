@@ -95,34 +95,17 @@ class Bandit:
 
 if __name__ == "__main__":
 
-    lr = [0.1]
-    exp = [0.1,0.2,0.3,0.4,0.5, 0.6,0.7,0.8,0.9]
-
-    lst_reward = []
-    dataindex=sys.argv[1]
-
-    for i in exp:
-        for j in lr:
-            bdt = Bandit(k=1, exp_rate=i,lr=j ,seed=1234, train=0,dataindex=dataindex,number_server=4,is_autoscale = 0,ls_rsc = 3, tmodel = 'arima')
-            bdt.play()
-            test_key = 'exp = {}, lr = {}, avg_reward = {}, max_reward ={}, min_reward = {}'.format(i,j,np.average(bdt.avg_reward),np.max(bdt.avg_reward),np.min(bdt.avg_reward))
-            lst_reward.append(test_key)
-    print(lst_reward)
-    for rx in lst_reward:
-        print(rx)
-
-
-#     bdt = Bandit(k=1, exp_rate=0.5, seed=1234, train=int(sys.argv[1]),dataindex=sys.argv[2],number_server=sys.argv[3],is_autoscale = int(sys.argv[4]),ls_rsc = int(sys.argv[5]), tmodel = sys.argv[6])
-#     bdt.play()
-#     avg_reward1 = bdt.avg_reward
-#     #bdt = Bandit(k=4, exp_rate=0.1, seed=1234, ucb=True, c=2)
-#     #bdt.play()
-#     #avg_reward3 = bdt.avg_reward
-#     print(np.average(avg_reward1))
-#     plt.figure(figsize=[8, 6])
-#     plt.plot(avg_reward1, label="exp_rate=0.1")
-#    # plt.plot(avg_reward3, label="ucb, c=2")
-#     plt.xlabel("n_iter", fontsize=14)
-#     plt.ylabel("avg reward", fontsize=14)
-#     plt.legend()
-#     plt.show()
+    bdt = Bandit(k=1, exp_rate=0.1, seed=1234, train=int(sys.argv[1]),dataindex=sys.argv[2],number_server=sys.argv[3],is_autoscale = int(sys.argv[4]),ls_rsc = int(sys.argv[5]), tmodel = sys.argv[6])
+    bdt.play()
+    avg_reward1 = bdt.avg_reward
+    #bdt = Bandit(k=4, exp_rate=0.1, seed=1234, ucb=True, c=2)
+    #bdt.play()
+    #avg_reward3 = bdt.avg_reward
+    print(np.average(avg_reward1))
+    plt.figure(figsize=[8, 6])
+    plt.plot(avg_reward1, label="exp_rate=0.1")
+   # plt.plot(avg_reward3, label="ucb, c=2")
+    plt.xlabel("n_iter", fontsize=14)
+    plt.ylabel("avg reward", fontsize=14)
+    plt.legend()
+    plt.show()
